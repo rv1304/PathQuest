@@ -3,105 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <title>Document</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        #container{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #f0f0f0;
+            border: 1px solid black;
+            border-radius: 20px;
+            width:fit-content;
+            height: fit-content;
+            padding: 20px 50px;
         }
-
-        body {
-            font-family: 'Press Start 2P', cursive;
-            background-color: #f0f0f0;
-            color: #333;
+        body{
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            text-align: center;
-        }
-
-        .container {
-            max-width: 400px;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: #1a1a1a;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        label {
-            font-family: Arial, sans-serif;
-            font-size: 0.9rem;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            font-size: 0.9rem;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-family: Arial, sans-serif;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            background-color: #333;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-            border: none;
-            cursor: pointer;
-            font-family: 'Press Start 2P', cursive;
-        }
-
-        .btn:hover {
-            background-color: #555;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.2rem;
-            }
-
-            label, input {
-                font-size: 0.8rem;
-            }
+            height: 100vh;
+            margin: 0;
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>Login</h1>
-        <form>
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
-            </div>
-            <button type="submit" class="btn">Sign In</button>
+    <div id ="container">   
+        <h1>Login Page</h1>
+        <form id="form">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username"><br><br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password"><br><br>
+            <input type="submit" value="Login">
+            <p>If no accound Signup <a href="./signup"> Click here</a></p>
         </form>
     </div>
+
+    <script>
+
+        function validateCredentials(username, password) {
+            if (!username.trim() || !password.trim()) {
+                alert('Kindly fill all the fields');
+                return false;
+            }
+            return true;
+        }
+
+        function login(username, password) {
+            const user = localStorage.getItem(username);
+            if (user) {
+                const userdata = JSON.parse(user);
+                if (userdata.password === password) {
+                    alert('Login successful!');
+                    window.location.href = "./dashboard"; 
+                } else {
+                    alert('Incorrect password. Please try again.');
+                }
+            } else {
+                alert('Username not found. Please sign up first.');
+            }
+        }
+        const loginForm = document.querySelector('form');
+        loginForm.addEventListener('submit', function(e){ // this is a used to handle and stop default behaviour of browser for a event in this case this used for
+            // it prevents form from submitting and reloading the page so we can process the data using JavaScript
+            // The browser automatically sends the form data to the server (the URL in action attribute, default is the current page if not specified).
+            // Then the browser reloads the page or navigates to a new page
+            // basically it will not check my js login and redirect without checkint that which is not auth
+
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value
+
+            if (validateCredentials(username, password)) {
+            login(username, password);
+            }
+        });
+    </script>
 </body>
 </html>

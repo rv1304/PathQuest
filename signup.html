@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #container{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #f0f0f0;
+            border: 1px solid black;
+            border-radius: 20px;
+            width:fit-content;
+            height: fit-content;
+            padding: 20px 50px;
+        }
+        body{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id ="container">   
+        <h1>SignUp Page</h1>
+        <form id="form">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username"><br><br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password"><br><br>
+            <label for="confirmPassword"> Confirm Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword">
+            <input type="submit" value="Sign Up">
+            <p>Already have an account? <a href="./login.html">Login here</a></p>
+        </form>
+    </div>
+
+    <script>
+
+        function validateCredentials(username, password, confirmPassword) {
+            if(!username.trim() || !password.trim() || !confirmPassword.trim()){
+                alert('Kindly fill all the fields');
+                return false;
+            }
+            if (localStorage.getItem(username)){
+            alert('Username already exists. Please choose a different username.');
+            return false;
+        }
+
+        if (password !== confirmPassword) {
+            alert('Passwords do not match. Please try again.');
+            return false;
+        }
+            return true;
+        }
+
+        function signup(username, password) {
+            const user = {
+                username: username,
+                password: password
+            };
+            localStorage.setItem(username, JSON.stringify(user));
+            alert('Signup successful! You can now log in.');
+            setTimeout(() => {
+                window.location.href = "./login.html";
+            }, 1000);
+        }
+
+        const signupForm = document.getElementById('form');
+        signupForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (validateCredentials(username, password, confirmPassword)) {
+                signup(username, password);
+            }
+        });
+
+
+
+    </script>
+</body>
+</html>
