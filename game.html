@@ -1,179 +1,303 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Block Escape</title>
-  <style>
-    body { margin:0; display:flex; align-items:center; justify-content:center; height:100vh; background:#111; flex-direction: column; color:#0ff; font-family:sans-serif; }
-    canvas { background:#222; border:2px solid #0ff; }
-    #info { margin-bottom:10px; }
-    #overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction: column; background: rgba(0,0,0,0.8); color:#0ff; font-size:24px; display:none; }
-    #overlay button { margin:10px; padding:10px 20px; font-size:18px; border-radius:10px; border:none; cursor:pointer; background:#0ff; color:#111; transition:0.2s; }
-    #overlay button:hover { background:#0aa; color:#fff; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Escape</title>
+<style>
+body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #111;
+    color: #0ff;
+    font-family: monospace;
+    flex-direction: column;
+}
+#gameCanvas {
+    background: #222;
+    border: 2px solid #0ff;
+    border-radius: 10px;
+}
+#gameInfo { 
+    margin-bottom: 10px; 
+    font-size: 18px;
+}
+#gameOver, #levelMenu {
+    position: absolute;
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.9);
+    color: #0ff;
+    font-size: 24px;
+}
+button {
+    margin: 10px;
+    padding: 12px 25px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #0ff;
+    color: #111;
+    cursor: pointer;
+}
+button:hover { 
+    background: #0aa; 
+}
+#levelGrid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+}
+</style>
 </head>
 <body>
-<div id="info"></div>
-<canvas id="c" width="500" height="300"></canvas>
-<div id="overlay">
-  <div id="message"></div>
-  <button onclick="restartGame()">Restart</button>
-  <button onclick="backToMenu()">Back to Menu</button>
+
+<div id="gameInfo"></div>
+<canvas id="gameCanvas" width="500" height="300"></canvas>
+
+<div id="gameOver" style="display:none;">
+    <div id="resultMessage"></div>
+    <button onclick="restartGame()">Try Again</button>
+    <button id="nextLevelBtn" onclick="goNextLevel()">Next Level</button>
+    <button onclick="goToDashboard()">Back to Dashboard</button>
+</div>
+
+<div id="levelMenu">
+    <h2>Choose Your Level</h2>
+    <div id="levelGrid"></div>
+    <button onclick="goToDashboard()" style="margin-top: 20px;">Back to Dashboard</button>
 </div>
 
 <script>
-const ctx = c.getContext('2d');
-
-// --- Get logged-in user ---
-let currentUser = localStorage.getItem('currentUser');
+// Check if user is logged in
+var currentUser = localStorage.getItem('currentUser');
 if(!currentUser){
-    alert('No user logged in! Redirecting to login.');
+    alert('Please login first!');
     window.location.href = './login.html';
 }
 
-// --- Game variables ---
-let player = {x:20,y:20,s:20};
-let goal = {x:440,y:240,w:40,h:40};
-let obstacles = [
-  {x:100,y:0,w:20,h:200},
-  {x:200,y:100,w:20,h:200},
-  {x:300,y:0,w:20,h:200},
+var canvas = document.getElementById('gameCanvas');
+var drawing = canvas.getContext('2d');
+
+var playerX = 20;
+var playerY = 20;
+var playerSize = 20;
+var playerSpeed = 2;
+var moveX = 0;
+var moveY = 0;
+
+var currentLevel = 1;
+var isWon = false;
+var isDead = false;
+var playerScore = 0;
+var gameStartTime = 0;
+
+var allLevels = [
+    {
+        finish: {x: 440, y: 240, width: 40, height: 40}, 
+        walls: [{x: 150, y: 50, width: 20, height: 200}]
+    },
+    {
+        finish: {x: 440, y: 20, width: 40, height: 40}, 
+        walls: [{x: 100, y: 100, width: 20, height: 150}, {x: 250, y: 0, width: 20, height: 150}]
+    },
+    {
+        finish: {x: 440, y: 240, width: 40, height: 40}, 
+        walls: [{x: 100, y: 50, width: 20, height: 200}, {x: 200, y: 0, width: 20, height: 150}, {x: 300, y: 100, width: 20, height: 150}]
+    },
+    {
+        finish: {x: 440, y: 240, width: 40, height: 40}, 
+        walls: [{x: 50, y: 100, width: 20, height: 200}, {x: 150, y: 0, width: 20, height: 150}, {x: 250, y: 100, width: 20, height: 150}, {x: 350, y: 0, width: 20, height: 150}]
+    },
+    {
+        finish: {x: 440, y: 20, width: 40, height: 40}, 
+        walls: [{x: 80, y: 50, width: 20, height: 250}, {x: 180, y: 0, width: 20, height: 150}, {x: 280, y: 100, width: 20, height: 150}, {x: 380, y: 50, width: 20, height: 250}]
+    },
+    {
+        finish: {x: 440, y: 240, width: 40, height: 40}, 
+        walls: [{x: 50, y: 0, width: 20, height: 150}, {x: 150, y: 100, width: 20, height: 200}, {x: 250, y: 0, width: 20, height: 150}, {x: 350, y: 100, width: 20, height: 200}]
+    },
+    {
+        finish: {x: 440, y: 20, width: 40, height: 40}, 
+        walls: [{x: 50, y: 50, width: 20, height: 200}, {x: 150, y: 0, width: 20, height: 150}, {x: 250, y: 100, width: 20, height: 150}, {x: 350, y: 50, width: 20, height: 200}]
+    },
+    {
+        finish: {x: 440, y: 240, width: 40, height: 40}, 
+        walls: [{x: 60, y: 0, width: 20, height: 150}, {x: 160, y: 100, width: 20, height: 200}, {x: 260, y: 0, width: 20, height: 150}, {x: 360, y: 100, width: 20, height: 200}]
+    },
+    {
+        finish: {x: 440, y: 20, width: 40, height: 40}, 
+        walls: [{x: 40, y: 50, width: 20, height: 200}, {x: 140, y: 0, width: 20, height: 150}, {x: 240, y: 100, width: 20, height: 150}, {x: 340, y: 50, width: 20, height: 200}]
+    },
+    {
+        finish: {x: 440, y: 240, width: 40, height: 40}, 
+        walls: [{x: 50, y: 0, width: 20, height: 150}, {x: 150, y: 100, width: 20, height: 200}, {x: 250, y: 0, width: 20, height: 150}, {x: 350, y: 100, width: 20, height: 200}, {x: 200, y: 50, width: 20, height: 200}]
+    }
 ];
-let vx=0,vy=0,won=false,dead=false;
-let startTime = Date.now();
-let score = 0;
 
-// --- DOM elements ---
-const infoDiv = document.getElementById('info');
-const overlay = document.getElementById('overlay');
-const messageDiv = document.getElementById('message');
+var levelButtonContainer = document.getElementById('levelGrid');
+for (var i = 1; i <= 10; i++) {
+    var btn = document.createElement('button');
+    btn.innerText = 'Level ' + i;
+    btn.onclick = (function(levelNum) {
+        return function() {
+            currentLevel = levelNum;
+            document.getElementById('levelMenu').style.display = 'none';
+            startGame();
+        };
+    })(i);
+    levelButtonContainer.appendChild(btn);
+}
 
-// --- Helper to get high score ---
-function getHighScore(user){
-    let data = localStorage.getItem(user);
-    if(data){
-        let userdata = JSON.parse(data);
-        return userdata.highScore || 0;
+function startGame() {
+    playerX = 20;
+    playerY = 20;
+    moveX = 0;
+    moveY = 0;
+    isWon = false;
+    isDead = false;
+    playerScore = 0;
+    gameStartTime = Date.now();
+    document.getElementById('gameOver').style.display = 'none';
+}
+
+function restartGame() {
+    startGame();
+}
+
+function goNextLevel() {
+    if (currentLevel < 10) {
+        currentLevel++;
+        startGame();
     }
-    return 0;
 }
 
-// --- Update high score ---
-function updateHighScore(user, score){
-    let data = localStorage.getItem(user);
-    if(data){
-        let userdata = JSON.parse(data);
-        if(!userdata.highScore || score > userdata.highScore){
-            userdata.highScore = score;
-            localStorage.setItem(user, JSON.stringify(userdata));
-        }
-    }
-}
-
-// --- Restart game ---
-function restartGame(){
-    player.x = 20; player.y = 20;
-    vx=0; vy=0;
-    won=false; dead=false;
-    startTime = Date.now();
-    overlay.style.display = 'none';
-}
-
-// --- Back to menu ---
-function backToMenu(){
+function goToDashboard() {
     window.location.href = './dashboard.html';
 }
 
-// --- Game loop ---
-function loop(){
-  if(!won && !dead){
-    player.x+=vx; player.y+=vy;
-    score = Math.floor((Date.now() - startTime)/100); 
-  }
-
-  ctx.clearRect(0,0,c.width,c.height);
-
-  // goal
-  ctx.fillStyle='green'; ctx.fillRect(goal.x,goal.y,goal.w,goal.h);
-
-  // obstacles
-  ctx.fillStyle='red'; obstacles.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));
-
-  // player
-  ctx.fillStyle = dead?'#555':'#0ff'; ctx.fillRect(player.x,player.y,player.s,player.s);
-
-  // collisions
-  obstacles.forEach(o=>{
-    if(player.x<o.x+o.w && player.x+player.s>o.x && player.y<o.y+o.h && player.y+player.s>o.y){ dead=true; }
-  });
-
-  if(player.x<goal.x+goal.w && player.x+player.s>goal.x && player.y<goal.y+goal.h && player.y+player.s>goal.y){ won=true; }
-
-  // Game end
-  if(won || dead){
-    updateHighScore(currentUser, score);
-    infoDiv.innerHTML = `Player: <b>${currentUser}</b> | High Score: <b>${getHighScore(currentUser)}</b>`;
-    overlay.style.display = 'flex';
-    messageDiv.innerText = won ? `You Win! Score: ${score}` : `Game Over! Score: ${score}`;
-  }
-
-  requestAnimationFrame(loop);
+function updateGameInfo() {
+    document.getElementById('gameInfo').innerHTML = 'Level: <b>' + currentLevel + '</b> | Score: <b>' + playerScore + '</b> | Player: <b>' + currentUser + '</b>';
 }
-loop();
-// --- Update high score and leaderboard ---
-function updateHighScore(user, score) {
-  let data = localStorage.getItem(user);
-  if (data) {
-    let userdata = JSON.parse(data);
 
-    // Update personal best
-    if (!userdata.highScore || score > userdata.highScore) {
-      userdata.highScore = score;
-      localStorage.setItem(user, JSON.stringify(userdata));
-
-      // Now update global leaderboard
-      updateLeaderboard(user, score);
+function gameLoop() {
+    if (document.getElementById('levelMenu').style.display !== 'none') {
+        requestAnimationFrame(gameLoop);
+        return;
     }
-  }
-}
 
-// --- Update leaderboard array ---
-function updateLeaderboard(username, score) {
-  // Get existing leaderboard
-  let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+    if (!isWon && !isDead) {
+        playerX = playerX + moveX;
+        playerY = playerY + moveY;
 
-  // Check if user already exists in leaderboard
-  const existingPlayerIndex = leaderboard.findIndex(p => p.username === username);
+        if (playerX < 0) playerX = 0;
+        if (playerX > canvas.width - playerSize) playerX = canvas.width - playerSize;
+        if (playerY < 0) playerY = 0;
+        if (playerY > canvas.height - playerSize) playerY = canvas.height - playerSize;
 
-  if (existingPlayerIndex !== -1) {
-    // If user exists, only update if new score is higher
-    if (score > leaderboard[existingPlayerIndex].score) {
-      leaderboard[existingPlayerIndex].score = score;
+        var timeElapsed = Date.now() - gameStartTime;
+        playerScore = 1000 - Math.floor(timeElapsed / 10);
+        if (playerScore < 0) playerScore = 0;
     }
-  } else {
-    // Add new player
-    leaderboard.push({ username, score });
-  }
 
-  // Sort leaderboard by score (descending)
-  leaderboard.sort((a, b) => b.score - a.score);
+    drawing.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Save back to localStorage
-  localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+    var thisLevel = allLevels[currentLevel - 1];
+
+    drawing.fillStyle = 'green';
+    drawing.fillRect(thisLevel.finish.x, thisLevel.finish.y, thisLevel.finish.width, thisLevel.finish.height);
+
+    drawing.fillStyle = 'red';
+    for (var i = 0; i < thisLevel.walls.length; i++) {
+        var wall = thisLevel.walls[i];
+        drawing.fillRect(wall.x, wall.y, wall.width, wall.height);
+    }
+
+    if (isDead) {
+        drawing.fillStyle = '#555';
+    } else {
+        drawing.fillStyle = '#0ff';
+    }
+    drawing.fillRect(playerX, playerY, playerSize, playerSize);
+
+    for (var i = 0; i < thisLevel.walls.length; i++) {
+        var wall = thisLevel.walls[i];
+        if (playerX < wall.x + wall.width && 
+            playerX + playerSize > wall.x && 
+            playerY < wall.y + wall.height && 
+            playerY + playerSize > wall.y) {
+            isDead = true;
+            playerScore = 0;
+        }
+    }
+
+    if (playerX < thisLevel.finish.x + thisLevel.finish.width && 
+        playerX + playerSize > thisLevel.finish.x && 
+        playerY < thisLevel.finish.y + thisLevel.finish.height && 
+        playerY + playerSize > thisLevel.finish.y) {
+        isWon = true;
+    }
+
+    if (isWon) {
+        var leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+        var index = leaderboard.findIndex(function(p) { 
+            return p.username === currentUser && p.level === currentLevel; 
+        });
+        
+        if(index >= 0){
+            if(playerScore > leaderboard[index].score) {
+                leaderboard[index].score = playerScore;
+            }
+        } else {
+            leaderboard.push({username: currentUser, score: playerScore, level: currentLevel});
+        }
+        
+        leaderboard.sort(function(x,y){ return y.score - x.score; });
+        localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+
+        document.getElementById('gameOver').style.display = 'flex';
+        document.getElementById('resultMessage').innerText = 'You Won! Score: ' + playerScore;
+        document.getElementById('nextLevelBtn').style.display = 'inline-block';
+    }
+
+    if (isDead) {
+        document.getElementById('gameOver').style.display = 'flex';
+        document.getElementById('resultMessage').innerText = 'You Died! Score: ' + playerScore;
+        document.getElementById('nextLevelBtn').style.display = 'none';
+    }
+
+    updateGameInfo();
+    requestAnimationFrame(gameLoop);
 }
 
-// --- Controls ---
-onkeydown = e => {
-    if(!won && !dead){
-        if(e.key=='ArrowLeft') vx=-2;
-        if(e.key=='ArrowRight') vx=2;
-        if(e.key=='ArrowUp') vy=-2;
-        if(e.key=='ArrowDown') vy=2;
+gameLoop();
+
+document.onkeydown = function(e) {
+    if (!isWon && !isDead && document.getElementById('levelMenu').style.display === 'none') {
+        if (e.key == 'ArrowLeft') moveX = -playerSpeed;
+        if (e.key == 'ArrowRight') moveX = playerSpeed;
+        if (e.key == 'ArrowUp') moveY = -playerSpeed;
+        if (e.key == 'ArrowDown') moveY = playerSpeed;
     }
 };
-onkeyup = e => {
-    if(e.key.startsWith('Arrow')) vx=vy=0;
+
+document.onkeyup = function(e) {
+    if (e.key.startsWith('Arrow')) {
+        moveX = 0;
+        moveY = 0;
+    }
 };
 </script>
+
 </body>
 </html>

@@ -5,17 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #222;
+            color: rgb(255, 255, 255);
+            font-family: monospace;
+        }
+          .tv {
+            width: 500px;
+            height: 400px;
+            background: linear-gradient(145deg, #3a3a3a, #1a1a1a);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+
+
+        a {
+            color: rgba(255, 255, 255, 0.576);
+        }
+        
+        button {
+            background: #d01212;
+            color: #fff;
+            border: none;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 2px;
+        }
+
+        button:hover {
+            background: #e01414;
+        }
+        
         #container{
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: #f0f0f0;
+            background:
+            repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.03) 0px,
+                rgba(0, 100, 0, 0.05) 1px,
+                transparent 2px,
+                transparent 4px
+            ),
+            radial-gradient(ellipse at center, #001a00 0%, #000a00 50%, #000 100%);
             border: 1px solid black;
             border-radius: 20px;
-            width:fit-content;
-            height: fit-content;
+            width:auto;
             padding: 20px 50px;
+            height: 80%;
         }
         body{
             display: flex;
@@ -24,11 +70,28 @@
             height: 100vh;
             margin: 0;
         }
+        input{
+            background-color: #0a0000;
+            color: white;
+        }
+        input[type="submit"] {
+            margin-top: 20px;
+            background-color: #d01212; /* red like your buttons */
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #e01414;
+        }
+
     </style>
 </head>
 
 <body>
-    <div id ="container">   
+<div class="tv">
+<div id ="container">   
         <h1>Login Page</h1>
         <form id="form">
             <label for="username">Username:</label>

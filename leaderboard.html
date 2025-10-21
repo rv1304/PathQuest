@@ -1,48 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard</title>
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: #111;
+    color: #0ff;
+    min-height: 100vh;
+}
+h2 {
+    margin-top: 20px;
+    color: #0ff;
+}
+select {
+    margin-top: 10px;
+    padding: 8px 12px;
+    font-size: 16px;
+    background: #222;
+    color: #0ff;
+    border: 2px solid #0ff;
+    border-radius: 8px;
+}
+table {
+    border-collapse: collapse;
+    width: 80%;
+    max-width: 500px;
+    margin-top: 20px;
+    background: #222;
+    border: 2px solid #0ff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+th, td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #0aa;
+}
+th {
+    background: #0aa;
+    color: #111;
+}
+tr:nth-child(even) {
+    background: rgba(0,255,255,0.1);
+}
+tr:hover {
+    background: rgba(0,255,255,0.2);
+    cursor: pointer;
+}
+.no-data {
+    text-align: center;
+    color: #f00;
+    font-weight: bold;
+}
+</style>
 </head>
 <body>
-    <h2>Leaderboard</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Username</th>
-                <th>Score</th>
-            </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-            <!-- Leaderboard entries will be populated here -->
-        </tbody>
-    <script>
-        function loadLeaderboard() {
-  getFromStorage('leaderboard')
-    .then(leaderboard => {
-      const body = document.getElementById('leaderboardBody');
-      body.innerHTML = "";
 
-      leaderboard.forEach((player, index) => {
+<h2>Leaderboard</h2>
+
+<label for="levelSelect">Select Level:</label>
+<select id="levelSelect">
+    <option value="all">All Levels</option>
+    <option value="1">Level 1</option>
+    <option value="2">Level 2</option>
+    <option value="3">Level 3</option>
+    <option value="4">Level 4</option>
+    <option value="5">Level 5</option>
+    <option value="6">Level 6</option>
+    <option value="7">Level 7</option>
+    <option value="8">Level 8</option>
+    <option value="9">Level 9</option>
+    <option value="10">Level 10</option>
+</select>
+
+<table>
+    <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Username</th>
+            <th>Score</th>
+            <th>Level</th>
+        </tr>
+    </thead>
+    <tbody id="leaderboard-body">
+        <tr><td colspan="4" class="no-data">Loading...</td></tr>
+    </tbody>
+</table>
+
+<script>
+function getLeaderboardData() {
+    try {
+        const data = JSON.parse(localStorage.getItem('leaderboard'));
+        return Array.isArray(data) ? data : [];
+    } catch {
+        return [];
+    }
+}
+
+function loadLeaderboard(levelFilter='all') {
+    const leaderboard = getLeaderboardData();
+    const tbody = document.getElementById('leaderboard-body');
+    tbody.innerHTML = "";
+
+    if(leaderboard.length === 0){
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="4" class="no-data">No leaderboard data available.</td>`;
+        tbody.appendChild(row);
+        return;
+    }
+
+    // Filter by level if not 'all'
+    let filtered = leaderboard;
+    if(levelFilter !== 'all'){
+        filtered = leaderboard.filter(p => p.level == levelFilter);
+    }
+
+    // Sort descending by score
+    filtered.sort((a,b)=>b.score - a.score);
+
+    if(filtered.length === 0){
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="4" class="no-data">No data for this level.</td>`;
+        tbody.appendChild(row);
+        return;
+    }
+
+    filtered.forEach((player,index)=>{
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${player.name}</td>
-          <td>${player.score}</td>
+            <td>${index+1}</td>
+            <td>${player.username}</td>
+            <td>${player.score}</td>
+            <td>${player.level}</td>
         `;
-        body.appendChild(row);
-      });
-    })
-    .catch(error => {
-      const text = document.getElementById('leaderboard-body');
-      tbody.innerHTML = ""; // clear existing rows 
-        const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="3">No leaderboard data available.</td>`;
+        tbody.appendChild(row);
     });
 }
-    </script>
-    </body>
 
+// --- Dropdown filter ---
+document.getElementById('levelSelect').addEventListener('change', function(){
+    loadLeaderboard(this.value);
+});
+
+// Initial load
+loadLeaderboard();
+</script>
+
+</body>
 </html>
