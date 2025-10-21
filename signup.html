@@ -58,7 +58,14 @@
             alert('Passwords do not match. Please try again.');
             return false;
         }
-            return true;
+        
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            alert('Password must be at least 8 characters long, include one uppercase letter, one number, and one special character.');
+            return false;
+        }
+
+        return true;
         }
 
         function signup(username, password) {

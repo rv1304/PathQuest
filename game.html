@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Block Escape</title>
+  <style>
+    body { margin:0; display:flex; align-items:center; justify-content:center; height:100vh; background:#111; flex-direction: column; color:#0ff; font-family:sans-serif; }
+    canvas { background:#222; border:2px solid #0ff; }
+    #info { margin-bottom:10px; }
+    #overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction: column; background: rgba(0,0,0,0.8); color:#0ff; font-size:24px; display:none; }
+    #overlay button { margin:10px; padding:10px 20px; font-size:18px; border-radius:10px; border:none; cursor:pointer; background:#0ff; color:#111; transition:0.2s; }
+    #overlay button:hover { background:#0aa; color:#fff; }
+  </style>
+</head>
+<body>
+<div id="info"></div>
+<canvas id="c" width="500" height="300"></canvas>
+<div id="overlay">
+  <div id="message"></div>
+  <button onclick="restartGame()">Restart</button>
+  <button onclick="backToMenu()">Back to Menu</button>
+</div>
+
+<script>
+const ctx = c.getContext('2d');
+
+// --- Get logged-in user ---
+let currentUser = localStorage.getItem('currentUser');
+if(!currentUser){
+    alert('No user logged in! Redirecting to login.');
+    window.location.href = './login.html';
+}
+
+// --- Game variables ---
+let player = {x:20,y:20,s:20};
+let goal = {x:440,y:240,w:40,h:40};
+let obstacles = [
+  {x:100,y:0,w:20,h:200},
+  {x:200,y:100,w:20,h:200},
+  {x:300,y:0,w:20,h:200},
+];
+let vx=0,vy=0,won=false,dead=false;
+let startTime = Date.now();
+let score = 0;
+
+// --- DOM elements ---
+const infoDiv = document.getElementById('info');
+const overlay = document.getElementById('overlay');
+const messageDiv = document.getElementById('message');
+
+// --- Helper to get high score ---
+function getHighScore(user){
+    let data = localStorage.getItem(user);
+    if(data){
+        let userdata = JSON.parse(data);
+        return userdata.highScore || 0;
+    }
+    return 0;
+}
+
+// --- Update high score ---
+function updateHighScore(user, score){
+    let data = localStorage.getItem(user);
+    if(data){
+        let userdata = JSON.parse(data);
+        if(!userdata.highScore || score > userdata.highScore){
+            userdata.highScore = score;
+            localStorage.setItem(user, JSON.stringify(userdata));
+        }
+    }
+}
+
+// --- Restart game ---
+function restartGame(){
+    player.x = 20; player.y = 20;
+    vx=0; vy=0;
+    won=false; dead=false;
+    startTime = Date.now();
+    overlay.style.display = 'none';
+}
+
+// --- Back to menu ---
+function backToMenu(){
+    window.location.href = './dashboard.html';
+}
+
+// --- Game loop ---
+function loop(){
+  if(!won && !dead){
+    player.x+=vx; player.y+=vy;
+    score = Math.floor((Date.now() - startTime)/100); 
+  }
+
+  ctx.clearRect(0,0,c.width,c.height);
+
+  // goal
+  ctx.fillStyle='green'; ctx.fillRect(goal.x,goal.y,goal.w,goal.h);
+
+  // obstacles
+  ctx.fillStyle='red'; obstacles.forEach(o=>ctx.fillRect(o.x,o.y,o.w,o.h));
+
+  // player
+  ctx.fillStyle = dead?'#555':'#0ff'; ctx.fillRect(player.x,player.y,player.s,player.s);
+
+  // collisions
+  obstacles.forEach(o=>{
+    if(player.x<o.x+o.w && player.x+player.s>o.x && player.y<o.y+o.h && player.y+player.s>o.y){ dead=true; }
+  });
+
+  if(player.x<goal.x+goal.w && player.x+player.s>goal.x && player.y<goal.y+goal.h && player.y+player.s>goal.y){ won=true; }
+
+  // Game end
+  if(won || dead){
+    updateHighScore(currentUser, score);
+    infoDiv.innerHTML = `Player: <b>${currentUser}</b> | High Score: <b>${getHighScore(currentUser)}</b>`;
+    overlay.style.display = 'flex';
+    messageDiv.innerText = won ? `You Win! Score: ${score}` : `Game Over! Score: ${score}`;
+  }
+
+  requestAnimationFrame(loop);
+}
+loop();
+// --- Update high score and leaderboard ---
+function updateHighScore(user, score) {
+  let data = localStorage.getItem(user);
+  if (data) {
+    let userdata = JSON.parse(data);
+
+    // Update personal best
+    if (!userdata.highScore || score > userdata.highScore) {
+      userdata.highScore = score;
+      localStorage.setItem(user, JSON.stringify(userdata));
+
+      // Now update global leaderboard
+      updateLeaderboard(user, score);
+    }
+  }
+}
+
+// --- Update leaderboard array ---
+function updateLeaderboard(username, score) {
+  // Get existing leaderboard
+  let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+
+  // Check if user already exists in leaderboard
+  const existingPlayerIndex = leaderboard.findIndex(p => p.username === username);
+
+  if (existingPlayerIndex !== -1) {
+    // If user exists, only update if new score is higher
+    if (score > leaderboard[existingPlayerIndex].score) {
+      leaderboard[existingPlayerIndex].score = score;
+    }
+  } else {
+    // Add new player
+    leaderboard.push({ username, score });
+  }
+
+  // Sort leaderboard by score (descending)
+  leaderboard.sort((a, b) => b.score - a.score);
+
+  // Save back to localStorage
+  localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+}
+
+// --- Controls ---
+onkeydown = e => {
+    if(!won && !dead){
+        if(e.key=='ArrowLeft') vx=-2;
+        if(e.key=='ArrowRight') vx=2;
+        if(e.key=='ArrowUp') vy=-2;
+        if(e.key=='ArrowDown') vy=2;
+    }
+};
+onkeyup = e => {
+    if(e.key.startsWith('Arrow')) vx=vy=0;
+};
+</script>
+</body>
+</html>

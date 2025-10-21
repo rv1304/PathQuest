@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2>Leaderboard</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Username</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+            <!-- Leaderboard entries will be populated here -->
+        </tbody>
+    <script>
+        function loadLeaderboard() {
+  getFromStorage('leaderboard')
+    .then(leaderboard => {
+      const body = document.getElementById('leaderboardBody');
+      body.innerHTML = "";
+
+      leaderboard.forEach((player, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${player.name}</td>
+          <td>${player.score}</td>
+        `;
+        body.appendChild(row);
+      });
+    })
+    .catch(error => {
+      const text = document.getElementById('leaderboard-body');
+      tbody.innerHTML = ""; // clear existing rows 
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="3">No leaderboard data available.</td>`;
+    });
+}
+    </script>
+    </body>
+
+</html>

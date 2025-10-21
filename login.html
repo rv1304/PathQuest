@@ -36,7 +36,7 @@
             <label for="password">Password:</label>
             <input type="password" id="password" name="password"><br><br>
             <input type="submit" value="Login">
-            <p>If no accound Signup <a href="./signup"> Click here</a></p>
+            <p>If no accound Signup <a href="./signup.html"> Click here</a></p>
         </form>
     </div>
 
@@ -55,8 +55,9 @@
             if (user) {
                 const userdata = JSON.parse(user);
                 if (userdata.password === password) {
+                    localStorage.setItem('currentUser', username);
                     alert('Login successful!');
-                    window.location.href = "./dashboard"; 
+                    window.location.href = "dashboard.html"; 
                 } else {
                     alert('Incorrect password. Please try again.');
                 }
